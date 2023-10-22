@@ -15,6 +15,9 @@
 /apps*/*
 !/apps/cloud_federation_api
 !/apps/comments
+!/apps/photos
+!/apps/viewer
+!/apps/previewgenerator
 !/apps/contactsinteraction
 !/apps/dashboard
 !/apps/dav
