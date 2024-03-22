@@ -1540,7 +1540,7 @@ class AppConfig implements IAppConfig {
 			self::VALUE_FLOAT => IConfigValue::TYPE_FLOAT,
 			self::VALUE_BOOL => IConfigValue::TYPE_BOOL,
 			self::VALUE_ARRAY => IConfigValue::TYPE_ARRAY,
-			}) {
+		}) {
 			throw new AppConfigTypeConflictException('This key is mistyped compare to the list of available AppConfig keys for this app');
 		}
 

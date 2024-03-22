@@ -949,7 +949,7 @@ class RegistrationContext {
 	 */
 	public function getConfigValues(string $app, string $configType): array {
 		return $this->configValues[$app][$configType] ?? [];
-    }
+	}
 
 	public function strictConfigValues(string $app): bool {
 		return $this->configValues[$app]['_strict'] ?? false;
