@@ -497,52 +497,35 @@ export default {
 				shareDefaults.expiration = this.formatDateToString(this.config.defaultExpirationDate)
 			}
 
-			// do not push yet if we need a password or an expiration date: show pending menu
-			if (this.config.enableLinkPasswordByDefault || this.config.enforcePasswordForPublicLink || this.config.isDefaultExpireDateEnforced) {
-				this.pending = true
-
-				// if a share already exists, pushing it
-				if (this.share && !this.share.id) {
-					// if the share is valid, create it on the server
-					if (this.checkShare(this.share)) {
-						try {
-							await this.pushNewLinkShare(this.share, true)
-						} catch (e) {
-							this.pending = false
-							console.error(e)
-							return false
-						}
-						return true
-					} else {
-						this.open = true
-						OC.Notification.showTemporary(t('files_sharing', 'Error, please enter proper password and/or expiration date'))
-						return false
-					}
-				}
-
-				// ELSE, show the pending popovermenu
-				// if password default or enforced, pre-fill with random one
-				if (this.config.enableLinkPasswordByDefault || this.config.enforcePasswordForPublicLink) {
-					shareDefaults.password = await GeneratePassword()
-				}
-
-				// create share & close menu
-				const share = new Share(shareDefaults)
-				const component = await new Promise(resolve => {
-					this.$emit('add:share', share, resolve)
-				})
-
-				// open the menu on the
-				// freshly created share component
-				this.open = false
-				this.pending = false
-				component.open = true
-
-				// Nothing is enforced, creating share directly
-			} else {
-				const share = new Share(shareDefaults)
-				await this.pushNewLinkShare(share)
+			// if password default or enforced, pre-fill with random one
+			if (this.config.enableLinkPasswordByDefault || this.config.enforcePasswordForPublicLink) {
+				shareDefaults.password = await GeneratePassword()
 			}
+
+			const share = new Share(shareDefaults)
+			const component = await new Promise(resolve => {
+				this.$emit('add:share', share, resolve)
+			})
+
+			this.share = share
+
+			// If share expiration date and password have been set, show action menu for confirmation before creating share
+			if ((this.share.expiration || this.share.password) && !this.pending) {
+				this.pending = true
+				this.open = false
+				component.open = true
+				return true
+
+			}
+
+			// Nothing is enforced, creating share directly
+			// Or set password/expiry date has been reviewed
+			await this.pushNewLinkShare(share)
+			this.open = true
+			component.open = false
+			this.pending = false
+			this.share = null
+
 		},
 
 		/**
@@ -551,9 +534,8 @@ export default {
 		 * accordingly
 		 *
 		 * @param {Share} share the new share
-		 * @param {boolean} [update] do we update the current share ?
 		 */
-		async pushNewLinkShare(share, update) {
+		async pushNewLinkShare(share) {
 			try {
 				// do nothing if we're already pending creation
 				if (this.loading) {
@@ -582,21 +564,14 @@ export default {
 
 				this.open = false
 				console.debug('Link share created', newShare)
-
-				// if share already exists, copy link directly on next tick
 				let component
-				if (update) {
-					component = await new Promise(resolve => {
-						this.$emit('update:share', newShare, resolve)
-					})
-				} else {
-					// adding new share to the array and copying link to clipboard
-					// using promise so that we can copy link in the same click function
-					// and avoid firefox copy permissions issue
-					component = await new Promise(resolve => {
-						this.$emit('add:share', newShare, resolve)
-					})
-				}
+
+				// adding new share to the array and copying link to clipboard
+				// using promise so that we can copy link in the same click function
+				// and avoid firefox copy permissions issue
+				component = await new Promise(resolve => {
+					this.$emit('add:share', newShare, resolve)
+				})
 
 				// Execute the copy link method
 				// freshly created share component
